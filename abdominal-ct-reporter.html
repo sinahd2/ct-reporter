@@ -1,0 +1,1331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CT Report — Abdominal</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0a0e14;
+    --surface: #111720;
+    --surface2: #171e2a;
+    --border: #1e2d3d;
+    --accent: #00d4aa;
+    --accent2: #0099ff;
+    --warn: #ff6b35;
+    --text: #e2eaf4;
+    --muted: #5a7a99;
+    --mono: 'DM Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,170,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,170,0.03) 1px, transparent 1px);
+    background-size: 32px 32px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  header {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 32px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(10,14,20,0.9);
+    backdrop-filter: blur(12px);
+  }
+
+  .logo {
+    font-family: var(--sans);
+    font-weight: 800;
+    font-size: 1.1rem;
+    letter-spacing: -0.02em;
+    color: var(--accent);
+  }
+  .logo span { color: var(--muted); font-weight: 400; }
+
+  .badge {
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    padding: 3px 10px;
+    border-radius: 2px;
+  }
+
+  .main {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* LEFT PANEL */
+  .left {
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 28px 32px;
+    gap: 20px;
+  }
+
+  .panel-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .panel-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .transcript-box {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 16px;
+    font-size: 0.82rem;
+    line-height: 1.7;
+    color: var(--text);
+    min-height: 180px;
+    position: relative;
+    overflow-y: auto;
+  }
+
+  .transcript-box.listening {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent), inset 0 0 30px rgba(0,212,170,0.04);
+  }
+
+  .transcript-placeholder {
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  .live-text {
+    color: var(--accent);
+    opacity: 0.7;
+  }
+
+  /* Mic button */
+  .mic-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .mic-btn {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    border: 2px solid var(--accent);
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    position: relative;
+    outline: none;
+  }
+
+  .mic-btn:hover { background: rgba(0,212,170,0.08); }
+
+  .mic-btn.active {
+    background: rgba(0,212,170,0.12);
+    border-color: var(--accent);
+    animation: pulse-ring 1.4s ease-out infinite;
+  }
+
+  @keyframes pulse-ring {
+    0% { box-shadow: 0 0 0 0 rgba(0,212,170,0.4); }
+    70% { box-shadow: 0 0 0 16px rgba(0,212,170,0); }
+    100% { box-shadow: 0 0 0 0 rgba(0,212,170,0); }
+  }
+
+  .mic-icon {
+    width: 28px;
+    height: 28px;
+    fill: var(--accent);
+  }
+
+  .mic-status {
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .mic-status.active { color: var(--accent); }
+
+  .controls {
+    display: flex;
+    gap: 10px;
+  }
+
+  .btn {
+    flex: 1;
+    padding: 10px 16px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.15s;
+  }
+  .btn:hover { border-color: var(--muted); background: var(--surface); }
+  .btn.primary {
+    border-color: var(--accent2);
+    color: var(--accent2);
+  }
+  .btn.primary:hover { background: rgba(0,153,255,0.08); }
+  .btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  /* Template controls row */
+  .tpl-controls {
+    display: flex;
+    gap: 10px;
+  }
+
+  .btn-tpl {
+    flex: 1;
+    padding: 9px 14px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.15s;
+  }
+  .btn-tpl:hover { border-color: var(--accent); color: var(--accent); background: rgba(0,212,170,0.05); }
+
+  /* Active template badge */
+  .active-tpl-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 22px;
+  }
+
+  .active-tpl-badge {
+    display: none;
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid rgba(0,212,170,0.3);
+    background: rgba(0,212,170,0.06);
+    padding: 3px 10px;
+    border-radius: 2px;
+    align-items: center;
+    gap: 6px;
+  }
+  .active-tpl-badge.visible { display: inline-flex; }
+
+  .tpl-clear-x {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.7rem;
+    line-height: 1;
+    padding: 0 2px;
+  }
+  .tpl-clear-x:hover { color: var(--warn); }
+
+  .btn-generate {
+    width: 100%;
+    padding: 13px;
+    border: 1px solid var(--accent);
+    background: transparent;
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.2s;
+  }
+  .btn-generate:hover:not(:disabled) {
+    background: rgba(0,212,170,0.1);
+    box-shadow: 0 0 20px rgba(0,212,170,0.15);
+  }
+  .btn-generate:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  /* RIGHT PANEL */
+  .right {
+    display: flex;
+    flex-direction: column;
+    padding: 28px 32px;
+    gap: 20px;
+    overflow-y: auto;
+  }
+
+  .report-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .copy-btn {
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: none;
+    border: 1px solid var(--border);
+    padding: 4px 12px;
+    cursor: pointer;
+    font-family: var(--mono);
+    border-radius: 2px;
+    transition: all 0.15s;
+  }
+  .copy-btn:hover { color: var(--text); border-color: var(--muted); }
+
+  .report-body {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 24px;
+    font-size: 0.8rem;
+    line-height: 1.8;
+    overflow-y: auto;
+  }
+
+  .report-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: 12px;
+    color: var(--muted);
+  }
+
+  .report-empty-icon {
+    font-size: 2.5rem;
+    opacity: 0.3;
+  }
+
+  .report-empty p {
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .report-section { margin-bottom: 22px; }
+
+  .report-section-title {
+    font-family: var(--sans);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .report-section-content {
+    color: var(--text);
+    font-size: 0.8rem;
+    line-height: 1.8;
+    white-space: pre-wrap;
+  }
+
+  .impression-box {
+    background: rgba(0,212,170,0.04);
+    border: 1px solid rgba(0,212,170,0.2);
+    border-radius: 3px;
+    padding: 14px 16px;
+  }
+
+  .impression-box .report-section-title { color: var(--accent); }
+
+  .abnormal-tag {
+    display: inline-block;
+    background: rgba(255,107,53,0.15);
+    color: var(--warn);
+    border: 1px solid rgba(255,107,53,0.3);
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 1px 6px;
+    border-radius: 2px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+
+  .loading-dots {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+  }
+
+  .loading-dots span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: dot-bounce 1.2s ease-in-out infinite;
+  }
+  .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes dot-bounce {
+    0%, 80%, 100% { transform: scale(0.6); opacity: 0.3; }
+    40% { transform: scale(1); opacity: 1; }
+  }
+
+  .error-msg {
+    color: var(--warn);
+    font-size: 0.75rem;
+    padding: 10px 14px;
+    border: 1px solid rgba(255,107,53,0.3);
+    border-radius: 3px;
+    background: rgba(255,107,53,0.05);
+  }
+
+  .api-key-area {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .api-key-label {
+    font-size: 0.62rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .api-key-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .api-key-input {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    padding: 8px 12px;
+    border-radius: 3px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .api-key-input:focus { border-color: var(--accent); }
+  .api-key-input::placeholder { color: var(--muted); }
+
+  .api-save-btn {
+    padding: 8px 16px;
+    background: none;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .api-save-btn:hover { background: rgba(0,212,170,0.08); }
+
+  .key-status {
+    font-size: 0.65rem;
+    color: var(--accent);
+  }
+
+  /* ===== TEMPLATE MODAL ===== */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    width: 100%;
+    max-width: 560px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .modal-title {
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 2px 6px;
+    line-height: 1;
+    border-radius: 2px;
+    transition: color 0.15s;
+  }
+  .modal-close:hover { color: var(--text); }
+
+  .modal-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tab-btn {
+    flex: 1;
+    padding: 11px;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .tpl-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .tpl-empty {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.75rem;
+    line-height: 1.7;
+    padding: 32px 16px;
+  }
+
+  .tpl-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px 16px;
+    transition: border-color 0.15s;
+  }
+  .tpl-card:hover { border-color: rgba(0,212,170,0.4); }
+
+  .tpl-name {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 0.78rem;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .tpl-desc {
+    font-size: 0.71rem;
+    color: var(--muted);
+    line-height: 1.5;
+    margin-bottom: 10px;
+  }
+
+  .tpl-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .tpl-apply-btn {
+    padding: 5px 14px;
+    background: none;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.15s;
+  }
+  .tpl-apply-btn:hover { background: rgba(0,212,170,0.1); }
+
+  .tpl-delete-btn {
+    padding: 5px 14px;
+    background: none;
+    border: 1px solid rgba(255,107,53,0.3);
+    color: var(--warn);
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.15s;
+  }
+  .tpl-delete-btn:hover { background: rgba(255,107,53,0.08); border-color: var(--warn); }
+
+  .modal-footer {
+    padding: 14px 22px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .save-dialog {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .save-input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    padding: 7px 12px;
+    border-radius: 3px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .save-input:focus { border-color: var(--accent); }
+  .save-input::placeholder { color: var(--muted); }
+
+  .save-dialog-btns {
+    display: flex;
+    gap: 8px;
+  }
+
+  .btn-save-confirm {
+    padding: 7px 16px;
+    background: none;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.15s;
+  }
+  .btn-save-confirm:hover { background: rgba(0,212,170,0.08); }
+
+  .btn-save-cancel {
+    padding: 7px 16px;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.15s;
+  }
+  .btn-save-cancel:hover { border-color: var(--muted); color: var(--text); }
+
+  @media (max-width: 800px) {
+    .main { grid-template-columns: 1fr; }
+    .left { border-right: none; border-bottom: 1px solid var(--border); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">RADVOICE <span>/ Abdominal CT</span></div>
+  <div class="badge">Structured Report Generator</div>
+</header>
+
+<div class="main">
+  <!-- LEFT: Input -->
+  <div class="left">
+    <div class="panel-label">Dictation Input</div>
+
+    <!-- API Key -->
+    <div class="api-key-area" id="apiKeyArea">
+      <div class="api-key-label">Anthropic API Key</div>
+      <div class="api-key-row">
+        <input type="password" class="api-key-input" id="apiKeyInput" placeholder="sk-ant-..." />
+        <button class="api-save-btn" onclick="saveKey()">Save</button>
+      </div>
+      <div class="key-status" id="keyStatus" style="display:none">Key saved for this session</div>
+    </div>
+
+    <!-- Transcript display -->
+    <div class="transcript-box" id="transcriptBox">
+      <span class="transcript-placeholder" id="placeholder">Press the microphone and start describing your findings freely...</span>
+      <span id="transcriptText"></span>
+      <span class="live-text" id="liveText"></span>
+    </div>
+
+    <!-- Mic -->
+    <div class="mic-area">
+      <button class="mic-btn" id="micBtn" onclick="toggleMic()">
+        <svg class="mic-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"/>
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        </svg>
+      </button>
+      <div class="mic-status" id="micStatus">Click to record</div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <button class="btn primary" id="clearBtn" onclick="clearTranscript()">Clear</button>
+      <button class="btn" id="editBtn" onclick="makeEditable()">Edit Text</button>
+    </div>
+
+    <!-- Template controls -->
+    <div class="tpl-controls">
+      <button class="btn-tpl" onclick="openTemplateLibrary()">&#x229E; Templates</button>
+      <button class="btn-tpl" onclick="openSaveDialog()">+ Save as Template</button>
+    </div>
+
+    <!-- Active template indicator -->
+    <div class="active-tpl-row">
+      <span class="active-tpl-badge" id="activeTplBadge">
+        <span id="activeTplName"></span>
+        <span class="tpl-clear-x" onclick="clearTemplate()" title="Clear template">&#x2715;</span>
+      </span>
+    </div>
+
+    <button class="btn-generate" id="generateBtn" onclick="generateReport()" disabled>
+      Generate Report
+    </button>
+
+    <div id="errorMsg" class="error-msg" style="display:none"></div>
+  </div>
+
+  <!-- RIGHT: Report -->
+  <div class="right">
+    <div class="report-header">
+      <div class="panel-label" style="flex:1">Structured Report</div>
+      <button class="copy-btn" id="copyBtn" onclick="copyReport()" style="display:none">Copy Report</button>
+    </div>
+    <div class="report-body" id="reportBody">
+      <div class="report-empty">
+        <div class="report-empty-icon">&#x2B21;</div>
+        <p>Report will appear here</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TEMPLATE LIBRARY MODAL ===== -->
+<div class="modal-overlay" id="templateModal" style="display:none" onclick="if(event.target===this)closeTemplateLibrary()">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Template Library</div>
+      <button class="modal-close" onclick="closeTemplateLibrary()">&#x2715;</button>
+    </div>
+    <div class="modal-tabs">
+      <button class="tab-btn active" id="tabPreset" onclick="renderTemplateLibrary('preset')">Presets</button>
+      <button class="tab-btn" id="tabCustom" onclick="renderTemplateLibrary('custom')">My Templates</button>
+    </div>
+    <div class="tpl-list" id="templateList"></div>
+    <div class="modal-footer" id="modalFooter">
+      <button class="btn" onclick="showSaveDialog()">+ Save Current as Template</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---- State ----
+let apiKey = '';
+let recognition = null;
+let isListening = false;
+let fullTranscript = '';
+let reportData = null;
+let templateContext = null;
+let activeTemplateName = null;
+let customTemplates = [];
+let currentTab = 'preset';
+
+// ---- Preset Templates ----
+const PRESET_TEMPLATES = [
+  {
+    id: 'normal',
+    name: 'Normal Study',
+    description: 'All organs unremarkable — use as a complete normal report baseline',
+    prefill: 'The liver is normal in size and morphology with no focal lesions. The gallbladder is unremarkable with no stones or wall thickening. The bile ducts are not dilated. The pancreas is normal in size and morphology with no ductal dilation or peripancreatic stranding. The spleen is normal in size. The adrenal glands are normal bilaterally. The kidneys are normal bilaterally with no hydronephrosis, stones, or masses. The bladder is unremarkable. The bowel is normal in caliber throughout with no obstruction or inflammation. The vasculature is patent. No lymphadenopathy. No ascites or free air.',
+    context: null
+  },
+  {
+    id: 'liver-lesion',
+    name: 'Liver Lesion / HCC',
+    description: 'HCC surveillance or liver lesion characterization — LI-RADS focus',
+    prefill: '',
+    context: 'This study is being read for liver lesion characterization or HCC surveillance. Pay particular attention to arterial enhancement, washout appearance, enhancing capsule, and assign LI-RADS categories where applicable. Note lesion size in three dimensions. Comment on background liver parenchyma and signs of cirrhosis.'
+  },
+  {
+    id: 'oncology',
+    name: 'Oncology Surveillance',
+    description: 'Cancer follow-up — measurable disease, new lesions, response assessment',
+    prefill: '',
+    context: 'This is an oncology surveillance CT. Focus on measurable target lesions (size in cm), lymphadenopathy, new sites of involvement, ascites, pleural effusions, and organ involvement. Compare to prior study if mentioned. Use standard response criteria language (complete response, partial response, stable disease, progressive disease).'
+  },
+  {
+    id: 'post-op',
+    name: 'Post-operative',
+    description: 'Post-surgical abdomen — drains, anastomoses, fluid collections, complications',
+    prefill: '',
+    context: 'This is a post-operative abdominal CT. Note surgical changes, drain positions, anastomoses, post-surgical fluid collections, hematomas, abscesses, and complications such as anastomotic leak, ileus, bowel obstruction, or wound dehiscence. Characterize any fluid collections by location, size, and imaging characteristics.'
+  },
+  {
+    id: 'renal-stone',
+    name: 'Renal Stone / CT KUB',
+    description: 'Urolithiasis protocol — stone size, density, location, obstruction',
+    prefill: '',
+    context: 'This is a renal stone protocol CT (typically non-contrast). For each calculus identified: note location (renal calyx, renal pelvis, proximal/mid/distal ureter, UVJ, bladder), size in mm, and Hounsfield unit density. Describe degree of hydronephrosis and hydroureter. Note secondary signs of obstruction (perinephric stranding, ureteral wall edema).'
+  },
+  {
+    id: 'bowel-obstruction',
+    name: 'Bowel Obstruction',
+    description: 'SBO or LBO — transition point, etiology, signs of ischemia',
+    prefill: '',
+    context: 'This study is being evaluated for bowel obstruction. Identify whether small bowel or large bowel obstruction, the level and transition point, probable etiology (adhesion, hernia, mass, volvulus, etc.), and any signs of ischemia (pneumatosis, portal venous gas, mesenteric edema, lack of enhancement) or perforation (free air, free fluid).'
+  },
+  {
+    id: 'trauma',
+    name: 'Trauma / Acute Injury',
+    description: 'Trauma CT — solid organ injury grading, hemoperitoneum, vascular injury',
+    prefill: '',
+    context: 'This is a trauma CT. Systematically evaluate: solid organ lacerations and contusions (grade per AAST scale if applicable), hemoperitoneum (location and estimated volume), pneumoperitoneum, active contrast extravasation, vascular injuries, bowel and mesenteric injuries, and musculoskeletal injuries including spine, pelvis, and ribs.'
+  },
+  {
+    id: 'appendicitis',
+    name: 'Appendicitis / Acute RLQ',
+    description: 'RLQ pain — appendix, periappendiceal changes, perforation, alternatives',
+    prefill: '',
+    context: 'This CT is being read for possible appendicitis or acute right lower quadrant pathology. Evaluate: appendix diameter (normal <6mm), wall thickening, periappendiceal fat stranding, appendicolith, perforation, abscess. Also systematically consider alternative diagnoses: ovarian/adnexal pathology, Meckel diverticulitis, Crohn disease, mesenteric adenitis, right-sided colitis, cecal pathology.'
+  }
+];
+
+// ---- Custom Templates (localStorage) ----
+function loadCustomTemplates() {
+  try {
+    customTemplates = JSON.parse(localStorage.getItem('ct_templates') || '[]');
+  } catch { customTemplates = []; }
+}
+
+function persistCustomTemplates() {
+  localStorage.setItem('ct_templates', JSON.stringify(customTemplates));
+}
+
+// ---- Template Modal ----
+function openTemplateLibrary() {
+  loadCustomTemplates();
+  currentTab = 'preset';
+  renderTemplateLibrary('preset');
+  resetFooter();
+  document.getElementById('templateModal').style.display = 'flex';
+}
+
+function closeTemplateLibrary() {
+  document.getElementById('templateModal').style.display = 'none';
+  resetFooter();
+}
+
+function renderTemplateLibrary(tab) {
+  currentTab = tab;
+  document.getElementById('tabPreset').classList.toggle('active', tab === 'preset');
+  document.getElementById('tabCustom').classList.toggle('active', tab === 'custom');
+
+  const list = document.getElementById('templateList');
+  const templates = tab === 'preset' ? PRESET_TEMPLATES : customTemplates;
+
+  if (templates.length === 0) {
+    list.innerHTML = '<div class="tpl-empty">No custom templates yet.<br>Save your current transcript using the button below.</div>';
+    return;
+  }
+
+  list.innerHTML = templates.map(t => `
+    <div class="tpl-card">
+      <div class="tpl-name">${esc(t.name)}</div>
+      <div class="tpl-desc">${esc(t.description)}</div>
+      <div class="tpl-actions">
+        <button class="tpl-apply-btn" onclick="applyTemplate('${esc(t.id)}')">Use Template</button>
+        ${t.category === 'custom'
+          ? `<button class="tpl-delete-btn" onclick="deleteCustomTemplate('${esc(t.id)}')">Delete</button>`
+          : ''}
+      </div>
+    </div>`).join('');
+}
+
+function applyTemplate(id) {
+  const all = [...PRESET_TEMPLATES, ...customTemplates];
+  const t = all.find(x => x.id === id);
+  if (!t) return;
+
+  templateContext = t.context || null;
+  activeTemplateName = t.name;
+
+  if (t.prefill) {
+    fullTranscript = t.prefill;
+    document.getElementById('transcriptText').textContent = fullTranscript;
+    document.getElementById('placeholder').style.display = 'none';
+    checkGenerateBtn();
+  }
+
+  updateTemplateBadge();
+  closeTemplateLibrary();
+}
+
+function updateTemplateBadge() {
+  const badge = document.getElementById('activeTplBadge');
+  if (activeTemplateName) {
+    document.getElementById('activeTplName').textContent = '⊞ ' + activeTemplateName;
+    badge.classList.add('visible');
+  } else {
+    badge.classList.remove('visible');
+  }
+}
+
+function clearTemplate() {
+  templateContext = null;
+  activeTemplateName = null;
+  updateTemplateBadge();
+}
+
+function deleteCustomTemplate(id) {
+  customTemplates = customTemplates.filter(t => t.id !== id);
+  persistCustomTemplates();
+  renderTemplateLibrary('custom');
+}
+
+// ---- Save-as-Template ----
+function openSaveDialog() {
+  loadCustomTemplates();
+  currentTab = 'custom';
+  renderTemplateLibrary('custom');
+  showSaveDialog();
+  document.getElementById('templateModal').style.display = 'flex';
+}
+
+function showSaveDialog() {
+  document.getElementById('modalFooter').innerHTML = `
+    <div class="save-dialog">
+      <input class="save-input" id="saveName" placeholder="Template name" />
+      <input class="save-input" id="saveDesc" placeholder="Short description (optional)" />
+      <div class="save-dialog-btns">
+        <button class="btn-save-confirm" onclick="confirmSaveTemplate()">Save</button>
+        <button class="btn-save-cancel" onclick="resetFooter()">Cancel</button>
+      </div>
+    </div>`;
+  document.getElementById('saveName').focus();
+}
+
+function resetFooter() {
+  document.getElementById('modalFooter').innerHTML =
+    '<button class="btn" onclick="showSaveDialog()">+ Save Current as Template</button>';
+}
+
+function confirmSaveTemplate() {
+  const name = (document.getElementById('saveName').value || '').trim();
+  if (!name) { document.getElementById('saveName').focus(); return; }
+  if (!fullTranscript.trim()) {
+    closeTemplateLibrary();
+    showError('Nothing to save — dictate or type a transcript first.');
+    return;
+  }
+  const desc = (document.getElementById('saveDesc').value || '').trim();
+  customTemplates.push({
+    id: 'custom_' + Date.now(),
+    name,
+    description: desc,
+    category: 'custom',
+    prefill: fullTranscript.trim(),
+    context: null
+  });
+  persistCustomTemplates();
+  renderTemplateLibrary('custom');
+  resetFooter();
+}
+
+function esc(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ---- API Key ----
+function saveKey() {
+  const val = document.getElementById('apiKeyInput').value.trim();
+  if (!val) return;
+  apiKey = val;
+  document.getElementById('keyStatus').style.display = 'block';
+  document.getElementById('apiKeyInput').value = '••••••••••••••••';
+  checkGenerateBtn();
+}
+
+// ---- Speech Recognition ----
+const hasSpeech = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
+
+function initRecognition() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.lang = 'en-US';
+
+  recognition.onresult = (e) => {
+    let interim = '';
+    let finalPart = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) {
+        finalPart += e.results[i][0].transcript + ' ';
+      } else {
+        interim += e.results[i][0].transcript;
+      }
+    }
+    if (finalPart) {
+      fullTranscript += finalPart;
+      document.getElementById('transcriptText').textContent = fullTranscript;
+    }
+    document.getElementById('liveText').textContent = interim;
+    document.getElementById('placeholder').style.display = 'none';
+    checkGenerateBtn();
+  };
+
+  recognition.onerror = (e) => {
+    if (e.error !== 'no-speech') {
+      showError('Microphone error: ' + e.error);
+      stopListening();
+    }
+  };
+
+  recognition.onend = () => {
+    if (isListening) recognition.start();
+  };
+}
+
+function toggleMic() {
+  if (!hasSpeech) {
+    showError('Your browser does not support Speech Recognition. Try Chrome or Edge.');
+    return;
+  }
+  if (!recognition) initRecognition();
+  isListening ? stopListening() : startListening();
+}
+
+function startListening() {
+  isListening = true;
+  recognition.start();
+  document.getElementById('micBtn').classList.add('active');
+  document.getElementById('micStatus').textContent = 'Recording...';
+  document.getElementById('micStatus').classList.add('active');
+  document.getElementById('transcriptBox').classList.add('listening');
+}
+
+function stopListening() {
+  isListening = false;
+  if (recognition) recognition.stop();
+  document.getElementById('micBtn').classList.remove('active');
+  document.getElementById('micStatus').textContent = 'Click to record';
+  document.getElementById('micStatus').classList.remove('active');
+  document.getElementById('transcriptBox').classList.remove('listening');
+  document.getElementById('liveText').textContent = '';
+}
+
+function clearTranscript() {
+  fullTranscript = '';
+  document.getElementById('transcriptText').textContent = '';
+  document.getElementById('liveText').textContent = '';
+  document.getElementById('placeholder').style.display = '';
+  checkGenerateBtn();
+  hideError();
+}
+
+function makeEditable() {
+  const box = document.getElementById('transcriptBox');
+  box.contentEditable = 'true';
+  box.focus();
+  document.getElementById('editBtn').textContent = 'Done';
+  document.getElementById('editBtn').onclick = () => {
+    fullTranscript = box.innerText;
+    box.contentEditable = 'false';
+    document.getElementById('editBtn').textContent = 'Edit Text';
+    document.getElementById('editBtn').onclick = makeEditable;
+    checkGenerateBtn();
+  };
+}
+
+function checkGenerateBtn() {
+  const hasText = fullTranscript.trim().length > 5;
+  const hasKey = apiKey.length > 0;
+  document.getElementById('generateBtn').disabled = !(hasText && hasKey);
+}
+
+// ---- Report Generation ----
+async function generateReport() {
+  if (!apiKey || !fullTranscript.trim()) return;
+  hideError();
+
+  document.getElementById('generateBtn').disabled = true;
+  document.getElementById('generateBtn').textContent = 'Generating...';
+  document.getElementById('reportBody').innerHTML = '<div class="loading-dots"><span></span><span></span><span></span></div>';
+  document.getElementById('copyBtn').style.display = 'none';
+
+  const contextBlock = templateContext
+    ? '\n\nAdditional context for this study:\n' + templateContext
+    : '';
+
+  const prompt = `You are an expert radiologist. The following is a free-form dictation from a radiologist describing findings in an Abdominal CT scan.
+
+Your job is to organize this into a fully structured radiology report. Return ONLY valid JSON with this exact structure (no markdown, no explanation):
+
+{
+  "technique": "string — infer from context or state 'Contrast-enhanced CT of the abdomen and pelvis' if not specified",
+  "clinical_indication": "string — infer from context or state 'Not specified'",
+  "findings": {
+    "liver": "string",
+    "gallbladder_and_bile_ducts": "string",
+    "pancreas": "string",
+    "spleen": "string",
+    "adrenal_glands": "string",
+    "kidneys_and_ureters": "string",
+    "bladder": "string",
+    "bowel": "string",
+    "vasculature": "string",
+    "lymph_nodes": "string",
+    "peritoneum_and_retroperitoneum": "string",
+    "bones_and_soft_tissues": "string"
+  },
+  "impression": ["string array — numbered key findings, most important first"],
+  "recommendation": "string or null",
+  "abnormal_organs": ["list of organ keys that have abnormal findings, e.g. 'liver', 'kidneys_and_ureters'"]
+}
+
+Rules:
+- If an organ is not mentioned or is normal, write "Unremarkable." for that field.
+- Be concise and use standard radiology report language.
+- Impression should be numbered bullet points as separate strings.
+- If a finding is clearly abnormal, list that organ in abnormal_organs.${contextBlock}
+
+Dictation to process:
+"""
+${fullTranscript}
+"""`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1500,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.error?.message || 'API error ' + response.status);
+    }
+
+    const data = await response.json();
+    const rawText = data.content[0].text;
+    const cleaned = rawText.replace(/```json|```/g, '').trim();
+    reportData = JSON.parse(cleaned);
+    renderReport(reportData);
+
+  } catch (err) {
+    showError('Error: ' + err.message);
+    document.getElementById('reportBody').innerHTML =
+      '<div class="report-empty"><div class="report-empty-icon">&#x26A0;</div><p>Failed to generate report</p></div>';
+  } finally {
+    document.getElementById('generateBtn').disabled = false;
+    document.getElementById('generateBtn').textContent = 'Generate Report';
+    checkGenerateBtn();
+  }
+}
+
+function renderReport(data) {
+  const abnormal = new Set(data.abnormal_organs || []);
+
+  const findingsLabels = {
+    liver: 'Liver',
+    gallbladder_and_bile_ducts: 'Gallbladder & Bile Ducts',
+    pancreas: 'Pancreas',
+    spleen: 'Spleen',
+    adrenal_glands: 'Adrenal Glands',
+    kidneys_and_ureters: 'Kidneys & Ureters',
+    bladder: 'Bladder',
+    bowel: 'Bowel',
+    vasculature: 'Vasculature',
+    lymph_nodes: 'Lymph Nodes',
+    peritoneum_and_retroperitoneum: 'Peritoneum & Retroperitoneum',
+    bones_and_soft_tissues: 'Bones & Soft Tissues'
+  };
+
+  let findingsHTML = '';
+  for (const [key, label] of Object.entries(findingsLabels)) {
+    const val = data.findings?.[key] || 'Unremarkable.';
+    const isAbnormal = abnormal.has(key);
+    findingsHTML += `
+      <div style="margin-bottom:12px">
+        <span style="font-family:var(--sans);font-size:0.72rem;font-weight:600;color:${isAbnormal ? 'var(--warn)' : 'var(--muted)'};text-transform:uppercase;letter-spacing:0.1em">${label}</span>
+        ${isAbnormal ? '<span class="abnormal-tag">Abnormal</span>' : ''}
+        <div style="margin-top:4px;color:var(--text);font-size:0.8rem;line-height:1.7">${val}</div>
+      </div>`;
+  }
+
+  const impressionHTML = (data.impression || [])
+    .map((item, i) => `<div style="margin-bottom:6px"><span style="color:var(--accent);margin-right:8px">${i + 1}.</span>${item}</div>`)
+    .join('');
+
+  const recHTML = data.recommendation
+    ? `<div class="report-section"><div class="report-section-title">Recommendation</div><div class="report-section-content">${data.recommendation}</div></div>`
+    : '';
+
+  document.getElementById('reportBody').innerHTML = `
+    <div class="report-section">
+      <div class="report-section-title">Technique</div>
+      <div class="report-section-content">${data.technique || 'Not specified'}</div>
+    </div>
+    <div class="report-section">
+      <div class="report-section-title">Clinical Indication</div>
+      <div class="report-section-content">${data.clinical_indication || 'Not specified'}</div>
+    </div>
+    <div class="report-section">
+      <div class="report-section-title">Findings</div>
+      ${findingsHTML}
+    </div>
+    <div class="report-section impression-box">
+      <div class="report-section-title">Impression</div>
+      <div class="report-section-content">${impressionHTML}</div>
+    </div>
+    ${recHTML}
+  `;
+
+  document.getElementById('copyBtn').style.display = 'block';
+}
+
+function copyReport() {
+  if (!reportData) return;
+  const f = reportData.findings || {};
+  const labels = {
+    liver: 'Liver', gallbladder_and_bile_ducts: 'Gallbladder & Bile Ducts',
+    pancreas: 'Pancreas', spleen: 'Spleen', adrenal_glands: 'Adrenal Glands',
+    kidneys_and_ureters: 'Kidneys & Ureters', bladder: 'Bladder', bowel: 'Bowel',
+    vasculature: 'Vasculature', lymph_nodes: 'Lymph Nodes',
+    peritoneum_and_retroperitoneum: 'Peritoneum & Retroperitoneum',
+    bones_and_soft_tissues: 'Bones & Soft Tissues'
+  };
+  let text = 'ABDOMINAL CT REPORT\n' + '='.repeat(40) + '\n\n';
+  text += 'TECHNIQUE\n' + reportData.technique + '\n\n';
+  text += 'CLINICAL INDICATION\n' + reportData.clinical_indication + '\n\n';
+  text += 'FINDINGS\n';
+  for (const [k, l] of Object.entries(labels)) text += l + ': ' + (f[k] || 'Unremarkable.') + '\n';
+  text += '\nIMPRESSION\n';
+  (reportData.impression || []).forEach((item, i) => { text += (i + 1) + '. ' + item + '\n'; });
+  if (reportData.recommendation) text += '\nRECOMMENDATION\n' + reportData.recommendation;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = 'Copy Report'; }, 2000);
+  });
+}
+
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+function hideError() {
+  document.getElementById('errorMsg').style.display = 'none';
+}
+
+// Init
+if (!hasSpeech) {
+  document.getElementById('micStatus').textContent = 'Not supported in this browser';
+}
+</script>
+</body>
+</html>
