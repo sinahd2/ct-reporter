@@ -1156,32 +1156,37 @@ async function generateReport() {
 Your job is to organize this into a fully structured radiology report. Return ONLY valid JSON with this exact structure (no markdown, no explanation):
 
 {
-  "technique": "string — infer from context or state 'Contrast-enhanced CT of the abdomen and pelvis' if not specified",
-  "clinical_indication": "string — infer from context or state 'Not specified'",
+  "clinical_history": "string - infer from context or 'Not provided'",
+  "comparison": "string - infer from context or 'None'",
+  "technique": "string - default 'CT of the abdomen and pelvis was performed.' Add contrast/protocol details if mentioned.",
+  "medications": "string - default 'None'. List contrast agents or medications if mentioned.",
   "findings": {
-    "liver": "string",
-    "gallbladder_and_bile_ducts": "string",
-    "pancreas": "string",
-    "spleen": "string",
-    "adrenal_glands": "string",
-    "kidneys_and_ureters": "string",
-    "bladder": "string",
-    "bowel": "string",
-    "vasculature": "string",
-    "lymph_nodes": "string",
-    "peritoneum_and_retroperitoneum": "string",
-    "bones_and_soft_tissues": "string"
+    "lung_bases": "string - default 'Unremarkable.'",
+    "liver": "string - default 'Unremarkable.'",
+    "gallbladder": "string - default 'Unremarkable.'",
+    "spleen": "string - default 'Unremarkable.'",
+    "pancreas": "string - default 'Unremarkable.'",
+    "adrenal_glands": "string - default 'Unremarkable.'",
+    "kidneys": "string - default 'Unremarkable.'",
+    "gi_tract": "string - default 'Unremarkable.'",
+    "vasculature": "string - default 'Unremarkable.'",
+    "lymphadenopathy": "string - default 'Absent.'",
+    "peritoneum": "string - default 'No ascites.'",
+    "bladder": "string - default 'Unremarkable.'",
+    "reproductive_organs": "string - default 'Unremarkable.'",
+    "bones": "string - default 'No suspicious lesions.'",
+    "extraperitoneal_soft_tissues": "string - default 'Unremarkable.'",
+    "lines_drains_devices": "string - default 'None.'"
   },
-  "impression": ["string array — numbered key findings, most important first"],
-  "recommendation": "string or null",
-  "abnormal_organs": ["list of organ keys that have abnormal findings, e.g. 'liver', 'kidneys_and_ureters'"]
+  "radiation_dose": "string or null - include if mentioned",
+  "impression": ["string array - key findings, most important first. If normal: 'Unremarkable CT of the abdomen and pelvis.'"],
+  "abnormal_organs": ["list of finding keys that are abnormal, e.g. 'liver', 'kidneys'"]
 }
 
 Rules:
-- If an organ is not mentioned or is normal, write "Unremarkable." for that field.
-- Be concise and use standard radiology report language.
-- Impression should be numbered bullet points as separate strings.
-- If a finding is clearly abnormal, list that organ in abnormal_organs.${contextBlock}
+- Use standard radiology report language. Be concise.
+- If an organ is not mentioned or is normal, use the default value shown above.
+- List each abnormal organ key in abnormal_organs.${contextBlock}
 
 Dictation to process:
 """
@@ -1226,86 +1231,68 @@ ${fullTranscript}
   }
 }
 
+function buildReportText(data) {
+  const f = data.findings || {};
+  let t = '';
+  t += 'CLINICAL HISTORY: ' + (data.clinical_history || '') + '\n\n';
+  t += 'COMPARISON: ' + (data.comparison || '') + '\n\n';
+  t += 'TECHNIQUE: ' + (data.technique || 'CT of the abdomen and pelvis was performed.') + '\n\n';
+  t += 'MEDICATIONS:\n' + (data.medications || 'None') + '\n\n';
+  t += 'FINDINGS:\n\n';
+  t += '   Visualized lung bases:  ' + (f.lung_bases || 'Unremarkable') + '\n\n';
+  t += '   Liver:  ' + (f.liver || 'Unremarkable') + '\n\n';
+  t += '   Gallbladder:  ' + (f.gallbladder || '') + '\n\n';
+  t += '   Spleen:  ' + (f.spleen || 'Unremarkable') + '\n\n';
+  t += '   Pancreas:  ' + (f.pancreas || 'Unremarkable') + '\n\n';
+  t += '   Adrenal Glands:  ' + (f.adrenal_glands || 'Unremarkable') + '\n\n';
+  t += '   Kidneys:  ' + (f.kidneys || 'Unremarkable') + '\n\n';
+  t += '   GI Tract:  ' + (f.gi_tract || 'Unremarkable') + '\n\n';
+  t += '   Vasculature:  ' + (f.vasculature || 'Unremarkable') + '\n\n';
+  t += '   Lymphadenopathy: ' + (f.lymphadenopathy || 'Absent') + '\n\n';
+  t += '   Peritoneum: ' + (f.peritoneum || 'No ascites') + '\n\n';
+  t += '   Bladder: ' + (f.bladder || 'Unremarkable') + '\n\n';
+  t += '   Reproductive organs: ' + (f.reproductive_organs || 'Unremarkable') + '\n\n';
+  t += '   Bones:  ' + (f.bones || 'No suspicious lesions') + '\n\n';
+  t += '   Extraperitoneal soft tissues: ' + (f.extraperitoneal_soft_tissues || 'Unremarkable') + '\n\n';
+  t += '   Lines/drains/medical devices:  ' + (f.lines_drains_devices || '') + '\n\n';
+  t += 'RADIATION DOSE INDICATORS:\n' + (data.radiation_dose || '') + '\n\n';
+  t += 'IMPRESSION:\n\n';
+  (data.impression || []).forEach((item, i) => { t += (i + 1) + '. ' + item + '\n'; });
+  return t;
+}
+
 function renderReport(data) {
+  const text = buildReportText(data);
   const abnormal = new Set(data.abnormal_organs || []);
 
-  const findingsLabels = {
-    liver: 'Liver',
-    gallbladder_and_bile_ducts: 'Gallbladder & Bile Ducts',
-    pancreas: 'Pancreas',
-    spleen: 'Spleen',
-    adrenal_glands: 'Adrenal Glands',
-    kidneys_and_ureters: 'Kidneys & Ureters',
-    bladder: 'Bladder',
-    bowel: 'Bowel',
-    vasculature: 'Vasculature',
-    lymph_nodes: 'Lymph Nodes',
-    peritoneum_and_retroperitoneum: 'Peritoneum & Retroperitoneum',
-    bones_and_soft_tissues: 'Bones & Soft Tissues'
-  };
+  // Highlight abnormal lines by wrapping them in a span
+  const lines = text.split('\n').map(line => {
+    const isAbnormal = [...abnormal].some(key => {
+      const labels = {
+        lung_bases: 'Visualized lung bases', liver: 'Liver', gallbladder: 'Gallbladder',
+        spleen: 'Spleen', pancreas: 'Pancreas', adrenal_glands: 'Adrenal Glands',
+        kidneys: 'Kidneys', gi_tract: 'GI Tract', vasculature: 'Vasculature',
+        lymphadenopathy: 'Lymphadenopathy', peritoneum: 'Peritoneum', bladder: 'Bladder',
+        reproductive_organs: 'Reproductive organs', bones: 'Bones',
+        extraperitoneal_soft_tissues: 'Extraperitoneal soft tissues',
+        lines_drains_devices: 'Lines/drains'
+      };
+      return line.trimStart().startsWith(labels[key] || '___');
+    });
+    const escaped = line.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return isAbnormal
+      ? `<span style="color:var(--warn)">${escaped}</span>`
+      : escaped;
+  });
 
-  let findingsHTML = '';
-  for (const [key, label] of Object.entries(findingsLabels)) {
-    const val = data.findings?.[key] || 'Unremarkable.';
-    const isAbnormal = abnormal.has(key);
-    findingsHTML += `
-      <div style="margin-bottom:12px">
-        <span style="font-family:var(--sans);font-size:0.72rem;font-weight:600;color:${isAbnormal ? 'var(--warn)' : 'var(--muted)'};text-transform:uppercase;letter-spacing:0.1em">${label}</span>
-        ${isAbnormal ? '<span class="abnormal-tag">Abnormal</span>' : ''}
-        <div style="margin-top:4px;color:var(--text);font-size:0.8rem;line-height:1.7">${val}</div>
-      </div>`;
-  }
-
-  const impressionHTML = (data.impression || [])
-    .map((item, i) => `<div style="margin-bottom:6px"><span style="color:var(--accent);margin-right:8px">${i + 1}.</span>${item}</div>`)
-    .join('');
-
-  const recHTML = data.recommendation
-    ? `<div class="report-section"><div class="report-section-title">Recommendation</div><div class="report-section-content">${data.recommendation}</div></div>`
-    : '';
-
-  document.getElementById('reportBody').innerHTML = `
-    <div class="report-section">
-      <div class="report-section-title">Technique</div>
-      <div class="report-section-content">${data.technique || 'Not specified'}</div>
-    </div>
-    <div class="report-section">
-      <div class="report-section-title">Clinical Indication</div>
-      <div class="report-section-content">${data.clinical_indication || 'Not specified'}</div>
-    </div>
-    <div class="report-section">
-      <div class="report-section-title">Findings</div>
-      ${findingsHTML}
-    </div>
-    <div class="report-section impression-box">
-      <div class="report-section-title">Impression</div>
-      <div class="report-section-content">${impressionHTML}</div>
-    </div>
-    ${recHTML}
-  `;
-
+  document.getElementById('reportBody').innerHTML =
+    `<pre style="white-space:pre-wrap;font-family:var(--mono);font-size:0.8rem;line-height:1.8;color:var(--text);margin:0">${lines.join('\n')}</pre>`;
   document.getElementById('copyBtn').style.display = 'block';
 }
 
 function copyReport() {
   if (!reportData) return;
-  const f = reportData.findings || {};
-  const labels = {
-    liver: 'Liver', gallbladder_and_bile_ducts: 'Gallbladder & Bile Ducts',
-    pancreas: 'Pancreas', spleen: 'Spleen', adrenal_glands: 'Adrenal Glands',
-    kidneys_and_ureters: 'Kidneys & Ureters', bladder: 'Bladder', bowel: 'Bowel',
-    vasculature: 'Vasculature', lymph_nodes: 'Lymph Nodes',
-    peritoneum_and_retroperitoneum: 'Peritoneum & Retroperitoneum',
-    bones_and_soft_tissues: 'Bones & Soft Tissues'
-  };
-  let text = 'ABDOMINAL CT REPORT\n' + '='.repeat(40) + '\n\n';
-  text += 'TECHNIQUE\n' + reportData.technique + '\n\n';
-  text += 'CLINICAL INDICATION\n' + reportData.clinical_indication + '\n\n';
-  text += 'FINDINGS\n';
-  for (const [k, l] of Object.entries(labels)) text += l + ': ' + (f[k] || 'Unremarkable.') + '\n';
-  text += '\nIMPRESSION\n';
-  (reportData.impression || []).forEach((item, i) => { text += (i + 1) + '. ' + item + '\n'; });
-  if (reportData.recommendation) text += '\nRECOMMENDATION\n' + reportData.recommendation;
+  const text = buildReportText(reportData);
   navigator.clipboard.writeText(text).then(() => {
     const btn = document.getElementById('copyBtn');
     btn.textContent = 'Copied!';
