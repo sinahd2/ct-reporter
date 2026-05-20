@@ -1143,9 +1143,45 @@ async function generateReport() {
   hideError();
 
   document.getElementById('generateBtn').disabled = true;
-  document.getElementById('generateBtn').textContent = 'Generating...';
+  document.getElementById('generateBtn').textContent = 'Correcting transcript...';
   document.getElementById('reportBody').innerHTML = '<div class="loading-dots"><span></span><span></span><span></span></div>';
   document.getElementById('copyBtn').style.display = 'none';
+
+  // Step 1: correct medical terminology before structuring
+  try {
+    const corrResp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1024,
+        messages: [{
+          role: 'user',
+          content: `You are a radiology transcription editor. The text below was captured by a browser speech recognizer and may contain errors in medical terminology, anatomy, organ names, laterality, measurements, or radiology jargon.
+
+Correct any speech recognition errors. Do not add, remove, or interpret findings — only fix mis-transcribed words. Return ONLY the corrected text with no explanation.
+
+Transcript:
+"""
+${fullTranscript}
+"""`
+        }]
+      })
+    });
+    if (corrResp.ok) {
+      const corrData = await corrResp.json();
+      const corrected = corrData.content[0].text.trim();
+      fullTranscript = corrected;
+      document.getElementById('transcriptText').textContent = corrected;
+    }
+  } catch (_) { /* silently fall through with original transcript */ }
+
+  document.getElementById('generateBtn').textContent = 'Generating...';
 
   const contextBlock = templateContext
     ? '\n\nAdditional context for this study:\n' + templateContext
